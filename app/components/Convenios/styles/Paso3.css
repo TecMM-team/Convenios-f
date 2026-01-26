@@ -1,0 +1,18 @@
+.html-content-wrapper {
+  /* Add any wrapper-specific styles here */
+}
+
+.html-content-box {
+  padding: 1.5rem;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.html-content-box p {
+  font-weight: normal !important;
+}
+
+.html-content-box strong,
+.html-content-box b {
+  font-weight: 600 !important;
+}

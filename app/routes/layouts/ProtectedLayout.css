@@ -1,0 +1,41 @@
+.layout-container {
+  display: flex;
+  height: 100dvh;
+  width: 100%;
+  background-color: rgb(245, 247, 249);
+  overflow: hidden;
+}
+
+.layout-container .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100dvh;
+  z-index: 300;
+  flex-shrink: 0;
+}
+
+.layout-content {
+  flex: 1;
+  margin-left: 90px;
+  padding: 2rem 3rem;
+  background-color: #fff;
+  overflow-y: auto;
+  transition: margin-left 0.3s ease-in-out;
+  font-family: "madaniArabicMedium";
+  font-size: 2rem;
+  color: #1e1e2f;
+}
+
+@media (min-width: 769px) {
+  .sidebar:hover ~ .layout-content {
+    margin-left: 14dvw;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-content {
+    margin-left: 0;
+    padding-top: 60px;
+  }
+}

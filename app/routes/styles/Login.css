@@ -1,0 +1,101 @@
+/* Contenedor general dividido en dos columnas */
+.login-container {
+  display: flex;
+  height: 100dvh;
+  width: 100dvw;
+  background-color: #f4f6f8;
+}
+
+/* Panel izquierdo */
+.login-info {
+  flex: 1;
+  background-color: rgb(51, 23, 156);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  padding: 3rem;
+}
+
+.login-info-content {
+  max-width: 480px;
+}
+
+.login-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.login-description {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+/* Panel derecho (formulario) */
+.login-form {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: white;
+}
+
+.login-box {
+  width: 80%;
+  max-width: 400px;
+}
+
+.login-header {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+
+.login-subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+/* 🔹 Separación entre inputs */
+.input-wrapper {
+  margin-bottom: 1rem;
+}
+
+/* Enlaces */
+.login-links {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.login-link {
+  color: #1976d2;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+  color: rgb(35, 10, 120);
+}
+
+/* Adaptación para móviles */
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+
+  .login-info {
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .login-box {
+    width: 90%;
+  }
+}

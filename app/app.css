@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+@font-face {
+  font-family: 'madaniArabicBlack';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Black.ttf') ;
+}
+
+@font-face {
+  font-family: 'madaniArabicBold';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Bold.ttf') ;
+}
+
+@font-face {
+  font-family: 'madaniArabicExtraBold';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Extra-Bold.ttf') ;
+}
+
+@font-face {
+  font-family: 'madaniArabicExtraLight';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Extra-Light.ttf') ;
+}
+
+@font-face {
+  font-family: 'madaniArabicLight';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Light.ttf') ;
+}
+
+@font-face {
+  font-family: 'madaniArabicMedium';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Medium.ttf') ;
+}
+
+@font-face {
+  font-family: 'madaniArabicRegular';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Regular.ttf') ;
+}
+
+@font-face {
+  font-family: 'madaniArabicSemiBold';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Semi-Bold.ttf') ;
+}
+
+@font-face {
+  font-family: 'madaniArabicVariable';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Variable.ttf') ;
+}
+
+@font-face {
+  font-family: 'madaniArabicBlack';
+  src:local("MadaniArabicBlack"), url('./assets/fonts/Madani-Arabic-Black.ttf') ;
+}
+
+@font-face {
+  font-family: 'Madani Regular';
+  src: url('./assets/fonts/Madani-Arabic-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Madani Bold';
+  src: url('./assets/fonts/Madani-Arabic-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}

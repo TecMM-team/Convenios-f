@@ -1,0 +1,36 @@
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  font-family: "madaniArabicRegular";
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.crumb {
+  display: flex;
+  align-items: center;
+  transition: color 0.2s ease;
+}
+
+.crumb.clickable {
+  cursor: pointer;
+}
+
+.crumb.clickable:hover {
+  color: #1e1e2f;
+}
+
+.breadcrumbs .separator {
+  color: #9ca3af;
+  font-weight: 500;
+  padding: 0 0.5rem;
+  display: inline-block;
+  line-height: 1;
+  transform: translateY(1px);
+}
+
+.breadcrumbs .active {
+  font-family: "madaniArabicBold";
+  color: #1e1e2f;
+}
