@@ -61,12 +61,13 @@ export default function NotificationProvider({ children }: Props) {
         };
         loadNotifications();
 
-        const newSocket = io(url, { transports: ["websocket"] });
+        const newSocket = io(url, {
+            transports: ["websocket"],
+            auth: { token: user.token },
+        });
         setSocket(newSocket);
 
-        newSocket.on("connect", () => {
-            newSocket.emit("join", `cuenta_${user?.id_Cuenta}`);
-        });
+        newSocket.on("connect", () => {});
 
         newSocket.on("disconnect", () => {});
 

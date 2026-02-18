@@ -5,7 +5,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import pkg from 'dayjs';
 const {Dayjs} = pkg;
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 
 import {
   Box,
@@ -70,6 +70,7 @@ export default function FormEmpresa({ setPaso, tipoOrganizacion, setIdOrganizaci
 
   const { setNoti, user } = useAuthContext();
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
 
   // Cargar datos existentes cuando hay convenioData
   useEffect(() => {
@@ -314,10 +315,11 @@ export default function FormEmpresa({ setPaso, tipoOrganizacion, setIdOrganizaci
         if (convenioId) setIdConvenio(convenioId);
         if (folio) {
           setFolio(folio);
-          // Actualizar la URL con el numero_convenio
-          const newParams = new URLSearchParams(window.location.search);
-          newParams.set('numero_convenio', folio);
-          window.history.replaceState({}, '', `${window.location.pathname}?${newParams}`);
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('numero_convenio', folio);
+            return next;
+          }, { replace: true });
         }
         
         setNoti({

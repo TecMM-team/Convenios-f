@@ -5,7 +5,8 @@ import { createRecord, getData, getBinaryData, deleteRecord, updateRecord } from
 import { useSearchParams } from 'react-router';
 import Swal from 'sweetalert2';
 
-export type TipoOrganizacion = 'Empresa' | 'Persona Fisica' | 'Dependencia';
+export type TipoOrganizacion = 'Empresa' | 'Persona Fisica' | 'Persona Física' | 'Dependencia';
+type TipoConfigKey = 'Empresa' | 'Persona Fisica' | 'Dependencia';
 
 interface AnexosProps {
   setPaso: (paso: number) => void;
@@ -47,12 +48,40 @@ const DOCUMENTOS_CONFIG: Record<TipoOrganizacion, BaseDoc[]> = {
     { nombre: "Comprobante de Domicilio", key: "Comprobante" },
     { nombre: "Convenio Firmado", key: "ConvenioFirmado" },
   ],
+  'Persona Física': [
+    { nombre: "Alta ante Hacienda", key: "AltaHacienda" },
+    { nombre: "Identificación Oficial", key: "Identificacion" },
+    { nombre: "Comprobante de Domicilio", key: "Comprobante" },
+    { nombre: "Convenio Firmado", key: "ConvenioFirmado" },
+  ],
   'Dependencia': [
     { nombre: "Poder del Representante Legal / Nombramiento / Decreto", key: "Nombramiento" },
     { nombre: "Identificación Oficial", key: "Identificacion" },
     { nombre: "Comprobante de Domicilio", key: "Comprobante" },
     { nombre: "Convenio Firmado", key: "ConvenioFirmado" },
   ],
+};
+
+const getTipoConfigKey = (tipo: TipoOrganizacion): TipoConfigKey => {
+  const normalized = (tipo || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (normalized.includes("dependencia")) return "Dependencia";
+  if (normalized.includes("persona")) return "Persona Fisica";
+  return "Empresa";
+};
+
+const getTipoOwner = (tipo: TipoOrganizacion): 'Empresa' | 'Dependencia' | 'Persona Física' => {
+  const normalized = (tipo || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (normalized.includes("dependencia")) return "Dependencia";
+  if (normalized.includes("persona")) return "Persona Física";
+  return "Empresa";
 };
 
 interface AnexoItemProps {
@@ -127,13 +156,16 @@ export default function AnexosPaso4({ setPaso, tipoOrganizacion, folio, idConven
   
   useEffect(() => { documentosRef.current = documentos; }, [documentos]);
   
+  const tipoConfig = getTipoConfigKey(tipoOrganizacion);
+  const tipoOwner = getTipoOwner(tipoOrganizacion);
+
   const UPLOAD_ENDPOINT = "/media/upload"; 
   const FETCH_ENDPOINT_BASE = `/media/anexo/${idConvenio}`; 
   const DOWNLOAD_ENDPOINT_BASE = `/media/download/${idConvenio}`; 
 
-  const documentosBase = useMemo(() => DOCUMENTOS_CONFIG[tipoOrganizacion].map(doc => ({
+  const documentosBase = useMemo(() => DOCUMENTOS_CONFIG[tipoConfig].map(doc => ({
       ...doc, subido: false, nombreArchivo: "", archivo: null, idAnexo: undefined, urlObjeto: undefined,
-  })), [tipoOrganizacion]); 
+  })), [tipoConfig]); 
 
   const getFileNameFromPath = (fullPath: string) => fullPath.split(/[\/\\]/).pop() || 'documento.pdf';
 
@@ -326,7 +358,7 @@ export default function AnexosPaso4({ setPaso, tipoOrganizacion, folio, idConven
 
     const formData = new FormData();
     archivosAsubir.forEach(doc => doc.archivo && formData.append(doc.key, doc.archivo));
-    formData.append('tipoPersona', tipoOrganizacion);
+    formData.append('tipoPersona', tipoOwner);
     formData.append('folio', folio);
     formData.append('idConvenio', idConvenio.toString());
 

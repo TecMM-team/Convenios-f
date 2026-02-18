@@ -75,7 +75,11 @@ const makeCall = async ({
                  errorMessage = errorJson.message || errorMessage;
              } catch (e) { /* Fallback */ }
         } else {
-             errorMessage = error.response.data.message || ERROR_MAPPING[statusCode]?.errorMessage || errorMessage;
+             errorMessage =
+               error.response.data.message ||
+               error.response.data.msg ||
+               ERROR_MAPPING[statusCode]?.errorMessage ||
+               errorMessage;
         }
     }
 

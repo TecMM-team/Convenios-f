@@ -14,6 +14,7 @@ import { getData } from "~/utils/apiUtils";
 import { RowMenu } from "../../common/RowMenu/RowMenu";
 import { useAuthContext } from "~/context/AuthContext";
 import { useNavigate } from "react-router";
+import getToken from "~/utils/getToken";
 import ValidarModal from "./ValidarModal";
 import ValidarCoordinadorModal from "./ValidarCoordinadorModal";
 import RequiereAjusteModal from "./RequiereAjusteModal";
@@ -166,12 +167,14 @@ export default function ConveniosTable({ query, setModo, setSelecccion }: Conven
         
         const BACK_URL = import.meta.env.VITE_PUBLIC_URL;
         const API_KEY = import.meta.env.VITE_PUBLIC_API_KEY;
+        const tokenData = getToken();
         const url = `${BACK_URL}/media/download/${idConvenio}/${docKey}`;
         
         try {
             const response = await fetch(url, {
                 headers: {
-                    'api_key': API_KEY
+                    'api_key': API_KEY,
+                    'Authorization': `Bearer ${tokenData?.token || ''}`,
                 }
             });
             

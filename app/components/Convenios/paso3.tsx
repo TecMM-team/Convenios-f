@@ -2,11 +2,13 @@ import { useRef, useState, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 import { Box, Button, Stack, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { useAuthContext } from '~/context/AuthContext';
 import { useSearchParams, useNavigate } from 'react-router';
-import { updateRecord, createRecord } from '~/utils/apiUtils';
+import { updateRecord, createRecord, getData } from '~/utils/apiUtils';
+import getToken from '~/utils/getToken';
 
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -15,19 +17,35 @@ import './styles/Paso3.css';
 
 interface FormPersonaProps {
   setPaso: (paso: number) => void;
+  tipoOrganizacion: string;
 }
 
 const TINYMCE_TOKEN = import.meta.env.VITE_TINYMCE_TOKEN;
 const BACK_URL = import.meta.env.VITE_PUBLIC_URL;
 
-export default function Paso3({ setPaso }: FormPersonaProps) {
+export default function Paso3({ setPaso, tipoOrganizacion }: FormPersonaProps) {
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
+  const loadedConvenioRef = useRef<string | null>(null);
   const [disabled, setDisabled] = useState(true);
+  const [editorReady, setEditorReady] = useState(false);
   const [searchParams] = useSearchParams();
 
   const { setNoti } = useAuthContext();
   const navigate = useNavigate();
+  const getNumeroConvenio = () =>
+    searchParams.get('numero_convenio') ||
+    new URLSearchParams(window.location.search).get('numero_convenio');
+  const getConvenioEndpoint = () => {
+    const normalized = (tipoOrganizacion || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+    if (normalized.includes("dependencia")) return "/convenios/dependencia";
+    if (normalized.includes("persona")) return "/convenios/persona";
+    return "/convenios/empresa";
+  };
 
   // Actualizar el color de fondo cuando cambia el estado disabled
   useEffect(() => {
@@ -42,31 +60,46 @@ export default function Paso3({ setPaso }: FormPersonaProps) {
 
   const log = async () => {
     if (editorRef.current) {
-      const contenido = editorRef.current.getContent();
-      console.log(contenido);
-      
-      // Actualizar el ultimo_paso en el backend antes de avanzar
-      const numeroConvenio = searchParams.get('numero_convenio');
-      if (numeroConvenio) {
-        try {
-          await updateRecord({
-            data: { 
-              numero_convenio: numeroConvenio,
-              ultimo_paso: 3 
-            },
-            endpoint: '/convenios/draft'
-          });
-        } catch (error) {
-          console.error('Error al actualizar ultimo_paso:', error);
-        }
-      }
-      
+      await saveContenido(false);
       setPaso(4);
     }
   };
 
+  const saveContenido = async (showSuccessNotification = true) => {
+    const numeroConvenio = getNumeroConvenio();
+    if (!numeroConvenio || !editorRef.current) return false;
+
+    const contenido = editorRef.current.getContent();
+    const result = await updateRecord({
+      endpoint: '/convenios/draft',
+      data: {
+        numero_convenio: numeroConvenio,
+        contenido_Personalizado: contenido,
+        ultimo_paso: 3,
+      },
+    });
+
+    if (result.statusCode === 201) {
+      if (showSuccessNotification) {
+        setNoti({
+          open: true,
+          type: "success",
+          message: "Contenido del convenio guardado",
+        });
+      }
+      return true;
+    }
+
+    setNoti({
+      open: true,
+      type: "error",
+      message: result.errorMessage || "No se pudo guardar el contenido del convenio",
+    });
+    return false;
+  };
+
   const getHtml = async () => {
-    const numeroConvenio = searchParams.get('numero_convenio');
+    const numeroConvenio = getNumeroConvenio();
     
     if (!numeroConvenio) {
       setNoti({
@@ -77,8 +110,18 @@ export default function Paso3({ setPaso }: FormPersonaProps) {
       return;
     }
 
+    const draftResponse = await getData({
+      endpoint: `/convenios/draft/${numeroConvenio}`
+    });
+    const contenidoGuardado = draftResponse.data?.convenio?.contenido_Personalizado;
+    if (draftResponse.statusCode === 201 && contenidoGuardado) {
+      editorRef.current.setContent(contenidoGuardado);
+      loadedConvenioRef.current = numeroConvenio;
+      return;
+    }
+
     const response = await createRecord({
-      endpoint: '/convenios/empresa',
+      endpoint: getConvenioEndpoint(),
       data: {
         numero_convenio: numeroConvenio
       }
@@ -86,17 +129,35 @@ export default function Paso3({ setPaso }: FormPersonaProps) {
 
     if (response.statusCode === 200 && response.data?.ok && editorRef && editorRef.current) {
       editorRef.current.setContent(response.data.html);
+      loadedConvenioRef.current = numeroConvenio;
     } else {
       setNoti({
         open: true,
         type: "error",
-        message: response.data?.msg || "Error al cargar la plantilla",
+        message: response.data?.msg || response.errorMessage || "Error al cargar la plantilla",
       });
     }
   }
 
+  useEffect(() => {
+    const numeroConvenio = getNumeroConvenio();
+    if (!numeroConvenio || !editorRef.current || !editorReady) return;
+    if (loadedConvenioRef.current === numeroConvenio) return;
+    getHtml();
+  }, [searchParams, editorReady]);
+
   const handleButtonClick = async () => {
     if (!editorRef.current) return;
+    const tokenData = getToken();
+    const apiKey = import.meta.env.VITE_PUBLIC_API_KEY;
+    if (!tokenData?.token) {
+      setNoti({
+        open: true,
+        type: 'error',
+        message: 'Sesión inválida para generar PDF',
+      });
+      return;
+    }
     
     // 1. Obtener el HTML actual del editor
     const htmlContent = editorRef.current.getContent();
@@ -106,6 +167,8 @@ export default function Paso3({ setPaso }: FormPersonaProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'api_key': apiKey,
+          'Authorization': `Bearer ${tokenData.token}`,
         },
         body: JSON.stringify({ htmlContent }),
       });
@@ -139,7 +202,21 @@ export default function Paso3({ setPaso }: FormPersonaProps) {
     }
   };
 
+  const handleToggleEditor = async () => {
+    if (disabled) {
+      setDisabled(false);
+      return;
+    }
+
+    const saved = await saveContenido(true);
+    if (saved) {
+      setDisabled(true);
+    }
+  };
+
   const handleFileUpload = async (event: any) => {
+    const tokenData = getToken();
+    const apiKey = import.meta.env.VITE_PUBLIC_API_KEY;
     const file = event.target.files[0];
 
     // Verificar si se seleccionó un archivo
@@ -158,6 +235,10 @@ export default function Paso3({ setPaso }: FormPersonaProps) {
     try {
       const response = await fetch(BACK_URL + '/organizacion/archivo', {
         method: 'POST',
+        headers: {
+          'api_key': apiKey,
+          'Authorization': `Bearer ${tokenData?.token || ''}`,
+        },
         body: formData,
       });
       const data = await response.json();
@@ -196,8 +277,8 @@ export default function Paso3({ setPaso }: FormPersonaProps) {
         <Box>
           <Button
             variant="contained"
-            startIcon={<EditIcon />}
-            onClick={() => setDisabled(!disabled)}
+            startIcon={disabled ? <EditIcon /> : <SaveIcon />}
+            onClick={handleToggleEditor}
             sx={{
               mt: 2,
               mr: 2,
@@ -209,7 +290,7 @@ export default function Paso3({ setPaso }: FormPersonaProps) {
               textTransform: 'none', // Evita que el texto sea mayúsculas
             }}
           >
-            {disabled ? 'Personalizar' : 'Bloquear'}
+            {disabled ? 'Editar Convenio' : 'Guardar'}
           </Button>
           <input
             type="file"
@@ -240,7 +321,7 @@ export default function Paso3({ setPaso }: FormPersonaProps) {
           apiKey={TINYMCE_TOKEN}
           onInit={(_evt, editor) => {
             editorRef.current = editor;
-            getHtml();
+            setEditorReady(true);
           }}
           init={{
             height: 500,
