@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 
 import { useState,useEffect } from "react";
+import { useSearchParams } from "react-router";
 
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -50,6 +51,7 @@ export default function FormPersona({ setPaso, tipoOrganizacion, setIdOrganizaci
   const [municipiosDomicilio, setMunicipioDomicilio] = useState([]);
 
   const { setNoti, user } = useAuthContext();
+  const [, setSearchParams] = useSearchParams();
 
   // Cargar datos existentes cuando hay convenioData
   useEffect(() => {
@@ -138,6 +140,15 @@ export default function FormPersona({ setPaso, tipoOrganizacion, setIdOrganizaci
   }
 
   const handleRegister = async () => {
+    const rfcNormalizado = (form.rfc || "").trim().toUpperCase();
+    if (rfcNormalizado.length > 15) {
+      return setNoti({
+        open: true,
+        type: "error",
+        message: "RFC inválido: parece CURP. Captura RFC (máximo 15 caracteres).",
+      });
+    }
+
     if(!form.estado){
       return setNoti({
         open: true,
@@ -157,7 +168,7 @@ export default function FormPersona({ setPaso, tipoOrganizacion, setIdOrganizaci
     const municipio_seleccionado = municipiosDomicilio.find(opcion => opcion.value === form.municipio);
 
     const body = {
-    	"rfc": form.rfc,
+    	"rfc": rfcNormalizado,
     	"nombre_Legal": "",
       "nombre_Comercial": "",
       "nombre_Titular": form.nombreTitular,
@@ -220,12 +231,18 @@ export default function FormPersona({ setPaso, tipoOrganizacion, setIdOrganizaci
     setIdOrganizacion(idOrganizacion);
 
     // Paso 2: Crear el convenio
+    const tipoConvenio =
+      tipoOrganizacion.toLowerCase().includes("persona")
+        ? "Persona Física"
+        : tipoOrganizacion;
+
     const convenioBody = {
-      "id_Organizacion": idOrganizacion,
-      "id_Unidad_Academica": user?.id_Unidad_Academica,
-      "vigencia": null,
-      "fecha_Termino": null,
-      "ultimo_Paso": 2
+      id_Creador_Cuenta: user?.id_Cuenta,
+      id_Unidad_Academica: user?.id_Unidad_Academica,
+      tipo_Convenio: tipoConvenio,
+      fecha_Inicio: dayjs().format("YYYY-MM-DD"),
+      fecha_Fin: null,
+      id_Organizacion: idOrganizacion,
     };
 
     const convenioRespuesta = await createRecord({ 
@@ -237,11 +254,11 @@ export default function FormPersona({ setPaso, tipoOrganizacion, setIdOrganizaci
       setIdConvenio(convenioRespuesta.data.id_Convenio);
       const numeroConvenio = convenioRespuesta.data.numero_convenio;
       setFolio(numeroConvenio);
-      
-      // Actualizar la URL con el numero_convenio
-      const newParams = new URLSearchParams(window.location.search);
-      newParams.set('numero_convenio', numeroConvenio);
-      window.history.replaceState({}, '', `${window.location.pathname}?${newParams}`);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('numero_convenio', numeroConvenio);
+        return next;
+      }, { replace: true });
       
       setNoti({
         open: true,
@@ -270,7 +287,7 @@ export default function FormPersona({ setPaso, tipoOrganizacion, setIdOrganizaci
           <InputField text="Nombre Completo" type="text" size="100%" onChange={on("nombreTitular")}/>
         </Grid>
         <Grid size={6}>
-          <InputField text="RFC" type="text" size="100%" onChange={on("rfc")}/>
+          <InputField text="RFC" type="text" size="100%" value={form.rfc} onChange={on("rfc")}/>
         </Grid>
         <Grid size={6}>
           <InputField text="Número de INE" type="text" size="100%" onChange={on("numIne")}/>

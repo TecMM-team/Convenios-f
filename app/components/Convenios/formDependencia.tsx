@@ -15,9 +15,11 @@ import pkg from 'dayjs';
 const {Dayjs} = pkg;
 
 import { useState,useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 // Iconos
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CancelIcon from "@mui/icons-material/Cancel";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import InputField from "~/common/TextField/InputField";
@@ -59,23 +61,42 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
   const [municipiosDomicilio, setMunicipioDomicilio] = useState([]);
 
   const { setNoti, user } = useAuthContext();
+  const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
 
   // Cargar datos existentes cuando hay convenioData
   useEffect(() => {
     if (convenioData) {
-      setForm({
-        razonSocial: convenioData.nombre_Legal || "",
-        nombreTitular: convenioData.nombre_Titular || "",
-        puestoTitular: convenioData.puesto_Titular || "",
-        numEscritura: convenioData.oficio_Nombramiento || "",
-        numIne: convenioData.ine_Representante || "",
-        calleNumero: convenioData.domicilio_Calle || "",
-        estado: "",
-        municipio: convenioData.domicilio_Municipio || "",
-        cp: convenioData.domicilio_CP || "",
-        correo: convenioData.contacto_Email || "",
-        telefono: convenioData.contacto_Telefono || "",
-      });
+      const loadDataWithMunicipios = async () => {
+        if (convenioData.domicilio_Estado) {
+          const responseDomicilio = await getData({
+            endpoint: "/locacion/municipios/" + convenioData.domicilio_Estado
+          });
+          if (responseDomicilio.statusCode === 200 && responseDomicilio.data?.municipios) {
+            const municipios = responseDomicilio.data.municipios.map((m: any) => ({
+              ...m,
+              value: String(m.value),
+            }));
+            setMunicipioDomicilio(municipios);
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+        }
+
+        setForm({
+          razonSocial: convenioData.nombre_Legal || "",
+          nombreTitular: convenioData.nombre_Titular || "",
+          puestoTitular: convenioData.puesto_Titular || "",
+          numEscritura: convenioData.oficio_Nombramiento || "",
+          numIne: convenioData.ine_Representante || "",
+          calleNumero: convenioData.domicilio_Calle || "",
+          estado: convenioData.domicilio_Estado ? String(convenioData.domicilio_Estado) : "",
+          municipio: convenioData.domicilio_Municipio ? String(convenioData.domicilio_Municipio) : "",
+          cp: convenioData.domicilio_CP || "",
+          correo: convenioData.contacto_Email || "",
+          telefono: convenioData.contacto_Telefono || "",
+        });
+      };
+      loadDataWithMunicipios();
       
       if (convenioData.fecha_Nombramiento) {
         setFechaCreacion(dayjs(convenioData.fecha_Nombramiento));
@@ -94,11 +115,7 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
     setForm(s => ({ ...s, [k]: e.target.value }));
 
   const handleDateChange = (newDate: Dayjs | null) => {
-    if (newDate) {
-      setFechaCreacion(newDate.format('YYYY-MM-DD'));
-    } else {
-      setFechaCreacion(null);
-    }
+    setFechaCreacion(newDate);
   };
 
   //testigos
@@ -135,7 +152,11 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
         endpoint: "/locacion/municipios/" + form.estado
       });
       if (response.statusCode === 200 && response.data?.municipios) {
-        setMunicipioDomicilio(response.data.municipios);
+        const municipios = response.data.municipios.map((m: any) => ({
+          ...m,
+          value: String(m.value),
+        }));
+        setMunicipioDomicilio(municipios);
       }
     }
     fetchMunicipios();
@@ -152,7 +173,11 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
       endpoint: "/locacion/municipios/"+estado
     });
     if (response.statusCode === 200 && response.data?.municipios) {
-      setMunicipioDomicilio(response.data.municipios);
+      const municipios = response.data.municipios.map((m: any) => ({
+        ...m,
+        value: String(m.value),
+      }));
+      setMunicipioDomicilio(municipios);
     }
   }
 
@@ -176,14 +201,14 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
       "domicilio_Estado": form.estado,
       "domicilio_Municipio": form.municipio,
       "domicilio_CP": form.cp,
-      "contacto_Telefono": form.telefono,
-      "contacto_Email": form.correo,
-      "oficio_Nombramiento": form.numEscritura,
-      "fecha_Nombramiento": fechaCreacion,
-      "ine_Representante": "",
-      "acta_constitutiva": "",
-      "tipo": tipoOrganizacion,
-    	"testigos": testigos
+	      "contacto_Telefono": form.telefono,
+	      "contacto_Email": form.correo,
+	      "oficio_Nombramiento": form.numEscritura,
+	      "fecha_Nombramiento": fechaCreacion ? dayjs(fechaCreacion).format('YYYY-MM-DD') : null,
+	      "ine_Representante": form.numIne,
+	      "acta_constitutiva": "",
+	      "tipo": tipoOrganizacion,
+	    	"testigos": testigos
     }
     
     // Si ya existe una organización, actualizar en lugar de crear
@@ -232,7 +257,7 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
         id_Creador_Cuenta: user?.id_Cuenta,
         id_Unidad_Academica: user?.id_Unidad_Academica,
         tipo_Convenio: tipoOrganizacion,
-        fecha_Inicio: fechaCreacion || new Date().toISOString().split('T')[0],
+        fecha_Inicio: fechaCreacion ? dayjs(fechaCreacion).format('YYYY-MM-DD') : new Date().toISOString().split('T')[0],
         fecha_Fin: null,
         id_Organizacion: organizacionId
       };
@@ -246,10 +271,11 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
         if (convenioId) setIdConvenio(convenioId);
         if (folio) {
           setFolio(folio);
-          // Actualizar la URL con el numero_convenio
-          const newParams = new URLSearchParams(window.location.search);
-          newParams.set('numero_convenio', folio);
-          window.history.replaceState({}, '', `${window.location.pathname}?${newParams}`);
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('numero_convenio', folio);
+            return next;
+          }, { replace: true });
         }
         
         setNoti({
@@ -284,21 +310,22 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
           </Typography>
         </Grid>
         <Grid size={12}>
-          <InputField text="Nombre de la Dependencia" type="text" size="100%" onChange={on("razonSocial")}/>
+          <InputField text="Nombre de la Dependencia" type="text" size="100%" value={form.razonSocial} onChange={on("razonSocial")}/>
         </Grid>
         <Grid size={6}>
-          <InputField text="Representante Legal de la Dependencia" type="text" size="100%" onChange={on("nombreTitular")}/>
+          <InputField text="Representante Legal de la Dependencia" type="text" size="100%" value={form.nombreTitular} onChange={on("nombreTitular")}/>
         </Grid>
         <Grid size={6}>
-          <InputField text="Puesto del Representante" size="100%" type="text" onChange={on("puestoTitular")}/>
+          <InputField text="Puesto del Representante" size="100%" type="text" value={form.puestoTitular} onChange={on("puestoTitular")}/>
         </Grid>
         <Grid size={6}>
-          <InputField text="Número de Nombramiento" size="100%" type="text" onChange={on("numEscritura")}/>
+          <InputField text="Número de Nombramiento" size="100%" type="text" value={form.numEscritura} onChange={on("numEscritura")}/>
         </Grid>
         <Grid size={6}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DemoContainer components={['DatePicker']}>
                 <DatePicker
+                value={fechaCreacion}
                 onChange={handleDateChange}
                 sx={{
                     width: "100%",
@@ -311,7 +338,7 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
             </LocalizationProvider>
         </Grid>
         <Grid size={6}>
-          <InputField text="Número de INE del Representante Legal" size="100%" type="text" onChange={on("numIne")}/>
+          <InputField text="Número de INE del Representante Legal" size="100%" type="text" value={form.numIne} onChange={on("numIne")}/>
         </Grid>
         <Grid size={12} sx={{borderBottom: '1px solid #cacacaff'}}>
             <Typography variant="h6" sx={{ mb: 2 }}>
@@ -319,7 +346,7 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
             </Typography>
         </Grid>
         <Grid size={12}>
-          <InputField text="Calle y Número" type="text" size="100%" onChange={on("calleNumero")}/>
+          <InputField text="Calle y Número" type="text" size="100%" value={form.calleNumero} onChange={on("calleNumero")}/>
         </Grid>
         <Grid size={6}>
           <Box>
@@ -350,7 +377,7 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
           </Box>
         </Grid>
         <Grid size={6}>
-          <InputField text="Código Postal" type="text" size="100%" onChange={on("cp")} />
+          <InputField text="Código Postal" type="text" size="100%" value={form.cp} onChange={on("cp")} />
         </Grid>
         <Grid size={12} sx={{borderBottom: '1px solid #cacacaff'}}>
             <Typography variant="h6" sx={{ mb: 2 }}>
@@ -358,10 +385,10 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
             </Typography>
         </Grid>
         <Grid size={6}>
-          <InputField text="Correo Electronio" type="text" size="100%" onChange={on("correo")} />
+          <InputField text="Correo Electronio" type="text" size="100%" value={form.correo} onChange={on("correo")} />
         </Grid>
         <Grid size={6}>
-          <InputField text="Telefono" type="text" size="100%" onChange={on("telefono")} />
+          <InputField text="Telefono" type="text" size="100%" value={form.telefono} onChange={on("telefono")} />
         </Grid>
         <Grid size={12} sx={{borderBottom: '1px solid #cacacaff'}}>
           <Typography variant="h6" sx={{ mb: 2 }}>
@@ -406,7 +433,7 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
             justifyContent: "flex-end"
           }}
         >
-          {/* Botones de Regresar y Continuar */}
+          {/* Botones de Regresar, Continuar y Cancelar */}
           <Box>
             <Button
               variant="outlined" // Lo cambié a outlined para diferenciar
@@ -438,6 +465,21 @@ export default function FormDependencia({ setPaso, tipoOrganizacion, setIdOrgani
               }}
             >
               Continuar
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<CancelIcon />}
+              onClick={() => navigate('/convenios')}
+              sx={{
+                ml: 2,
+                padding: "10px 24px",
+                fontSize: "1rem",
+                fontWeight: "bold",
+                textTransform: "none",
+              }}
+            >
+              Cancelar
             </Button>
           </Box>
         </Box>

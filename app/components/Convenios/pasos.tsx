@@ -203,7 +203,7 @@ export default function ConveniosPasos({ paso, setPaso }: PasosProps) {
       {/* --- PASO 3: Otros Datos --- */}
       {paso === 3 && (
         <>
-          <Paso3 setPaso={setPaso}/>
+          <Paso3 setPaso={setPaso} tipoOrganizacion={tipoOrganizacion}/>
         </>
       )}
 
